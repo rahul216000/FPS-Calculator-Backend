@@ -2,13 +2,14 @@ const express = require('express');
 const dotenv = require("dotenv");
 const PORT = process.env.PORT || 3000;
 const cheerio = require('cheerio');
-const request = require('request-promise');
+const axios = require('axios');
+
 dotenv.config({ path: './config.env' });
+const Scraper_API_KEY = process.env.SCRAPER_API_KEY;
 
 const app = express();
 
 const SendEmail = require("./Messages/SendEmail")
-const Scraper_API_KEY = process.env.SCRAPER_API_KEY;
 
 const cors = require('cors');
 app.use(cors({
@@ -48,8 +49,8 @@ async function webScraper(url) {
     try {
         // url = "https://pc-builds.com/fps-calculator/result/1rV1fl/4N/bioshock-infinite/2560x1440/"
 
-        let data = await request(`http://api.scraperapi.com/?api_key=${Scraper_API_KEY}&url=${url}`)
-        const $ = cheerio.load(data);
+        let data = await axios.get(`http://api.scraperapi.com/?api_key=${Scraper_API_KEY}&url=${url}`)
+        const $ = cheerio.load(data.data);
 
         var text = $($('script')).text();
         var FirstResult = findTextAndReturnRemainder(text, "var objCombinedBar =");
@@ -81,18 +82,17 @@ function findTextAndReturnRemainder(target, variable) {
     try {
         var chopFront = target.substring(target.search(variable) + variable.length, target.length);
         var result = chopFront.substring(0, chopFront.search(";"));
+
         return result;
 
     } catch (error) {
         // Send Error Email
-
         return "Error"
     }
 }
 
 function PullArr(text, number) {
     try {
-
         let newSubStr = text.split("\n")
         newSubStr = newSubStr[number]
         newSubStr = newSubStr.slice(0, -1);
@@ -103,6 +103,7 @@ function PullArr(text, number) {
 
     } catch (error) {
         // Send Error Email
+        // console.log(error);
 
         return "Error"
     }
