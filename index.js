@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 const PORT = process.env.PORT || 3000;
 const cheerio = require('cheerio');
 const axios = require('axios');
+const mongoose = require('mongoose');
 
 dotenv.config({ path: './config.env' });
 const Scraper_API_KEY = process.env.SCRAPER_API_KEY;
@@ -20,6 +21,13 @@ app.use(cors({
     ]
 }));
 app.use(express.json())
+const DB = process.env.DATABASE;
+mongoose.set("strictQuery", false);
+mongoose.connect(DB).then(() => {
+    console.log('Connected');
+}).catch((e) => { console.log('Not connected' + e); })
+
+const Results = require('./Model/ResultStore');
 
 app.post("/result", async (req, res) => {
 
@@ -27,14 +35,20 @@ app.post("/result", async (req, res) => {
     let url = GetUrl(Processor, Graphic, Game, Resolution)
     console.log(url);
 
-    let data = await webScraper(url)
+    let data = ""
+    let checkResult = await CheckResultAvailable(url)
+
+    if(checkResult){
+        data = checkResult
+    }else{
+        data = await webScraper(url)
+    }
 
     if (data == "Error") {
         return res.send({Error: "Error"})
     }
 
     res.send(data)
-
 })
 
 app.post("/items-data", async (req, res) => {
@@ -44,7 +58,6 @@ app.post("/items-data", async (req, res) => {
     res.send(data)
 
 })
-
 
 // Wake Up Point
 
@@ -85,6 +98,8 @@ async function webScraper(url) {
         if (FirstResultArr.includes("Not Found") || SecondResultArr.includes("Not Found") || ThirdResultArr.includes("Not Found")) {
             throw new Error('Pull Arr Function Return Not Found');
         }
+
+        await StoreResult(url, { MainFPS: FirstResultArr, ProcessorFPS: SecondResultArr, GraphicFPS: ThirdResultArr })
 
         return { MainFPS: FirstResultArr, ProcessorFPS: SecondResultArr, GraphicFPS: ThirdResultArr }
 
@@ -298,6 +313,40 @@ function GetUrl(Processor, Graphic, Game, Resolution){
 
     return url
     
+}
+
+// Storing Result
+
+async function CheckResultAvailable(url){
+    try {
+
+        let Result = await Results.findOne({"url": url})
+
+        if(Result){
+            return Result.result
+        }else{
+            return false
+        }
+
+    } catch (error) {
+        console.log(error);
+        SendErrorEmail("CheckResultAvailable", error, url)
+    }
+}
+
+async function StoreResult(url, result){
+    try {
+        
+        let data = new Results({
+            url: url,
+            result: result
+        })
+        
+        let save = await data.save()
+    } catch (error) {
+        console.log(error);
+        SendErrorEmail("StoreResult", error, url)
+    }
 }
 
 app.listen(PORT, (error) => {
