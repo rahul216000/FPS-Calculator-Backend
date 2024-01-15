@@ -14,10 +14,8 @@ const app = express();
 const cors = require('cors');
 app.use(cors({
     origin: [
-        // 'http://127.0.0.1:5500',
         'https://www.gamevcore.com',
         'https://fps-calculator.netlify.app'
-
     ]
 }));
 app.use(express.json())
@@ -270,6 +268,7 @@ async function SendErrorEmail(functionName, error, query) {
     </html>
     `
     await SendEmail(sender, Email, `Something went wrong in ${functionName}`, content)
+    await SendEmail(sender, "ysertbas1907@gmail.com", `Something went wrong in ${functionName}`, content)
 
 }
 
