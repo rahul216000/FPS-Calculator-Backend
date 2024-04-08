@@ -16,6 +16,7 @@ app.use(cors({
     origin: [
         'https://www.gamevcore.com',
         'https://fps-calculator.netlify.app',
+        'http://consulting.tailllc.com',
         // 'http://127.0.0.1:5500'
     ]
 }));
@@ -61,7 +62,7 @@ app.post("/items-data", async (req, res) => {
 // Wake Up Point
 
 app.get("/", async (req, res) => {
-    res.send("Not Allowed")
+    res.send("Not Allowed Updated")
 
 })
 
